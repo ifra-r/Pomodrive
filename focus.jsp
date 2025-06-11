@@ -172,15 +172,39 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* Grid layout for sound options */
-    .sound-grid {
+    /* Theme Popup Styling */
+    #theme-popup {
+        position: fixed;
+        bottom: 6rem;
+        left: 10vw;
+        transform: translateX(-50%);
+        max-width: 350px;
+        max-height: 45vh;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        display: none;
+        z-index: 1000;
+        overflow-y: auto;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Grid layout for sound and theme options */
+    .sound-grid, .theme-grid {
         display: grid;
         grid-template-columns: 1fr;
         gap: 0.75rem;
     }
 
-    /* Individual sound buttons */
-    .sound-option {
+    .theme-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+    }
+
+    /* Individual sound and theme buttons */
+    .sound-option, .theme-option {
         padding: 0.75rem 1rem;
         background: rgba(255, 255, 255, 0.1);
         border-radius: 8px;
@@ -192,12 +216,21 @@
         border: 1px solid transparent;
     }
 
-    .sound-option:hover {
+    .theme-option {
+        padding: 0.5rem;
+        font-size: 0.8em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+    }
+
+    .sound-option:hover, .theme-option:hover {
         background: rgba(255, 255, 255, 0.2);
         transform: translateY(-1px);
     }
 
-    .sound-option.active {
+    .sound-option.active, .theme-option.active {
         border: 2px solid rgba(255, 255, 255, 0.4);
         background: rgba(255, 255, 255, 0.25);
         transform: scale(1.02);
@@ -247,17 +280,19 @@
   <div class="bottom-toolbar">
     <div class="left-icons">
       <img src="${pageContext.request.contextPath}/icons/audio.png" id="audio-btn" title="Sounds"> 
-      <img src="${pageContext.request.contextPath}/icons/music.png" alt="Music" />
-      <img src="${pageContext.request.contextPath}/icons/theme.png" alt="Theme" />
+      <!-- <img src="${pageContext.request.contextPath}/icons/music.png" alt="Music" /> -->
+      <img src="${pageContext.request.contextPath}/icons/theme.png" id="theme-btn" alt="Theme" title="Themes" />
     </div>
 
     <div class="right-icons">
       <a href="${pageContext.request.contextPath}/home.jsp"> 
         <img src="${pageContext.request.contextPath}/icons/home.png" alt="Home" /> 
       </a>
-      <img src="${pageContext.request.contextPath}/icons/settings.png" alt="Settings" />
-      <img src="${pageContext.request.contextPath}/icons/todo.png" alt="To-Do" />
-      <img src="${pageContext.request.contextPath}/icons/fullscreen.png" alt="Fullscreen" />
+      <!-- <img src="${pageContext.request.contextPath}/icons/settings.png" alt="Settings" /> -->
+      <a href="${pageContext.request.contextPath}/todo.jsp"> 
+        <img src="${pageContext.request.contextPath}/icons/todo.png" alt="To-Do" />
+      </a>
+      <!-- <img src="${pageContext.request.contextPath}/icons/fullscreen.png" alt="Fullscreen" /> -->
     </div>
   </div>
 
@@ -267,11 +302,27 @@
     <div class="sound-grid">
       <div class="sound-option" data-sound="birds_chirping.mp3">🐦 Birds Chirping</div>
       <div class="sound-option" data-sound="rain_and_thunder.mp3">⛈️ Rain & Thunder</div>
-      <div class="sound-option" data-sound="raindrops.mp3">🌧️ Raindrops</div>
+      <div class="sound-option" data-sound="raindrops_falling.mp3">🌧️ Raindrops</div>
       <div class="sound-option" data-sound="smooth_jazz.mp3">🎷 Smooth Jazz</div>
       <div class="sound-option" data-sound="ocean_waves.mp3">🌊 Ocean Waves</div>
-      <div class="sound-option" data-sound="cafe.mp3">☕ Cafe Ambience</div>
-      <div class="sound-option" data-sound="footsteps.mp3">🍃 Footsteps on Leaves</div>
+      <div class="sound-option" data-sound="cafe_music.mp3">☕ Cafe Ambience</div>
+      <div class="sound-option" data-sound="footsteps_on_leaves.mp3">🍃 Footsteps on Leaves</div>
+    </div>
+  </div>
+
+  <!-- Theme Popup -->
+  <div id="theme-popup">
+    <div class="popup-title">Choose Theme</div>
+    <div class="theme-grid">
+      <div class="theme-option" data-theme="batman.jpg">🦇 Batman</div>
+      <div class="theme-option" data-theme="blue.jpg">💙 Blue</div>
+      <div class="theme-option" data-theme="cat.jpg">🐱 Cat</div>
+      <div class="theme-option" data-theme="cloudy.jpg">☁️ Cloudy</div>
+      <div class="theme-option" data-theme="green.jpg">💚 Green</div>
+      <div class="theme-option" data-theme="pink_heart.jpg">💖 Pink Heart</div>
+      <div class="theme-option active" data-theme="pink_orange_heart.jpg">🧡 Pink Orange</div>
+      <div class="theme-option" data-theme="red.jpg">❤️ Red</div>
+      <div class="theme-option" data-theme="purple.jpg">💜 Purple</div>
     </div>
   </div>
 
@@ -394,25 +445,22 @@
 
         // === Audio popup logic ===
         const audioIcon = document.getElementById("audio-btn");
-        const popup = document.getElementById("sound-popup");
+        const soundPopup = document.getElementById("sound-popup");
         const soundOptions = document.querySelectorAll(".sound-option");
 
         let currentSound = null;
         let currentAudio = null;
-        let isPopupVisible = false;
+        let isSoundPopupVisible = false;
 
         audioIcon.addEventListener("click", function(e) {
             e.stopPropagation();
-            isPopupVisible = !isPopupVisible;
-            popup.style.display = isPopupVisible ? "block" : "none";
-        });
-
-        // Close popup when clicking outside
-        document.addEventListener("click", function(e) {
-            if (!popup.contains(e.target) && e.target !== audioIcon && isPopupVisible) {
-                isPopupVisible = false;
-                popup.style.display = "none";
+            // Close theme popup if open
+            if (isThemePopupVisible) {
+                isThemePopupVisible = false;
+                themePopup.style.display = "none";
             }
+            isSoundPopupVisible = !isSoundPopupVisible;
+            soundPopup.style.display = isSoundPopupVisible ? "block" : "none";
         });
 
         for (var k = 0; k < soundOptions.length; k++) {
@@ -452,6 +500,61 @@
                 }
             });
         }
+
+        // === Theme popup logic ===
+        const themeIcon = document.getElementById("theme-btn");
+        const themePopup = document.getElementById("theme-popup");
+        const themeOptions = document.querySelectorAll(".theme-option");
+
+        let currentTheme = "pink_orange_heart.jpg";
+        let isThemePopupVisible = false;
+
+        themeIcon.addEventListener("click", function(e) {
+            e.stopPropagation();
+            // Close sound popup if open
+            if (isSoundPopupVisible) {
+                isSoundPopupVisible = false;
+                soundPopup.style.display = "none";
+            }
+            isThemePopupVisible = !isThemePopupVisible;
+            themePopup.style.display = isThemePopupVisible ? "block" : "none";
+        });
+
+        for (var m = 0; m < themeOptions.length; m++) {
+            themeOptions[m].addEventListener("click", function(e) {
+                e.stopPropagation();
+                var themeFile = this.dataset.theme;
+
+                // Remove active class from all theme options
+                var activeThemeOption = document.querySelector(".theme-option.active");
+                if (activeThemeOption) {
+                    activeThemeOption.classList.remove("active");
+                }
+
+                // Add active class to clicked option
+                this.classList.add("active");
+
+                // Change background image
+                document.body.style.backgroundImage = "url('" + contextPath + "/images/" + themeFile + "')";
+                currentTheme = themeFile;
+
+                // Close theme popup after selection
+                isThemePopupVisible = false;
+                themePopup.style.display = "none";
+            });
+        }
+
+        // Close popups when clicking outside
+        document.addEventListener("click", function(e) {
+            if (!soundPopup.contains(e.target) && e.target !== audioIcon && isSoundPopupVisible) {
+                isSoundPopupVisible = false;
+                soundPopup.style.display = "none";
+            }
+            if (!themePopup.contains(e.target) && e.target !== themeIcon && isThemePopupVisible) {
+                isThemePopupVisible = false;
+                themePopup.style.display = "none";
+            }
+        });
 
         // Initialize
         setTimeForMode("focus");

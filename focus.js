@@ -7,9 +7,9 @@ document.addEventListener("DOMContentLoaded", function () {
     let cycleCount = 0;
 
     const modeDurations = {
-        focus: 1 * 60,
-        short: 2 * 60,
-        long: 3 * 60
+        focus: 25 * 60,
+        short: 5 * 60,
+        long: 15 * 60
     };
 
     const sound = new Audio("sounds/bell.mp3");
@@ -17,7 +17,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const timeDisplay = document.getElementById("time");
     const startPauseBtn = document.getElementById("startPause");
     const resetBtn = document.getElementById("reset");
-    // const pipBtn = document.getElementById("pip");
 
     function formatTime(seconds) {
         const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
@@ -30,15 +29,21 @@ document.addEventListener("DOMContentLoaded", function () {
         timeLeft = modeDurations[mode];
         updateTimeDisplay();
         stopTimer();
+        updateStartPauseButton();
     }
 
     function updateTimeDisplay() {
         timeDisplay.textContent = formatTime(timeLeft);
     }
 
+    function updateStartPauseButton() {
+        startPauseBtn.textContent = isRunning ? "Pause" : "Start";
+    }
+
     function startTimer() {
         if (isRunning) return;
         isRunning = true;
+        updateStartPauseButton();
         timer = setInterval(() => {
             if (timeLeft > 0) {
                 timeLeft--;
@@ -54,6 +59,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function stopTimer() {
         clearInterval(timer);
         isRunning = false;
+        updateStartPauseButton();
     }
 
     function resetTimer() {
@@ -63,7 +69,7 @@ document.addEventListener("DOMContentLoaded", function () {
     function autoSwitch() {
         if (currentMode === "focus") {
             cycleCount++;
-            setTimeForMode("short");
+            setTimeForMode(cycleCount % 4 === 0 ? "long" : "short");
         } else {
             setTimeForMode("focus");
         }
@@ -91,58 +97,49 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 
-    // // PiP functionality
-    // pipBtn.addEventListener("click", async () => {
-    //     try {
-    //         const video = document.createElement("video");
-    //         video.srcObject = await navigator.mediaDevices.getDisplayMedia({ video: true });
-    //         video.play();
-    //         document.body.appendChild(video);
-    //         await video.requestPictureInPicture();
-    //     } catch (error) {
-    //         console.error("PiP error:", error);
-    //     }
-    // });
-
-    setTimeForMode("focus");
-
-    // === Audio logic ===
+    // === Audio popup logic ===
     const audioIcon = document.getElementById("audio-btn");
-    const modal = document.getElementById("sound-modal");
-    const closeModal = document.getElementById("close-sound-modal");
+    const popup = document.getElementById("sound-popup");
     const soundOptions = document.querySelectorAll(".sound-option");
 
     let currentSound = null;
     let currentAudio = null;
+    let isPopupVisible = false;
 
-    audioIcon.addEventListener("click", () => {
-        modal.style.display = "block";
+    audioIcon.addEventListener("click", (e) => {
+        e.stopPropagation();
+        isPopupVisible = !isPopupVisible;
+        popup.style.display = isPopupVisible ? "block" : "none";
     });
 
-    closeModal.addEventListener("click", () => {
-        modal.style.display = "none";
-    });
-
-    window.addEventListener("click", (e) => {
-        if (e.target === modal) {
-            modal.style.display = "none";
+    // Close popup when clicking outside
+    document.addEventListener("click", (e) => {
+        if (!popup.contains(e.target) && e.target !== audioIcon && isPopupVisible) {
+            isPopupVisible = false;
+            popup.style.display = "none";
         }
     });
 
     soundOptions.forEach(option => {
-        option.addEventListener("click", () => {
+        option.addEventListener("click", (e) => {
+            e.stopPropagation();
             const soundFile = option.dataset.sound;
 
             if (currentSound === soundFile) {
-                currentAudio.pause();
-                currentAudio.currentTime = 0;
+                // Stop current sound
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                }
                 currentSound = null;
                 option.classList.remove("active");
             } else {
+                // Stop previous sound and start new one
                 if (currentAudio) {
                     currentAudio.pause();
                     document.querySelector(".sound-option.active")?.classList.remove("active");
                 }
+                
                 currentAudio = new Audio(`sounds/${soundFile}`);
                 currentAudio.loop = true;
                 currentAudio.play();
@@ -151,4 +148,8 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     });
+
+    // Initialize
+    setTimeForMode("focus");
+    document.getElementById("focusBtn").classList.add("active");
 });

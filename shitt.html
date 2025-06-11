@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pomodrive Focus</title>
+  <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      background: url('../images/purple.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: #fff;
+      font-family: 'Josefin Sans', sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between; 
+      font-family: 'Segoe UI Emoji', 'Noto Color Emoji', 'Josefin Sans', sans-serif;
+    }
+    
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 25px 30px;
+    }
+    
+    .brand {
+      font-weight: 900;
+      line-height: 1.1;
+    }
+    
+    .brand .title {
+      font-size: 2.2em;
+      font-weight: 900;
+    }
+    
+    .brand .author {
+      font-size: 0.9em;
+      font-weight: 900;
+      text-align: right;
+    }
+    
+    .quote {
+      font-size: 1.5em;
+      font-weight: 700;
+      max-width: 400px;
+      text-align: right;
+    }
+    
+    /* Main Centered Content */
+    .main-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex-grow: 1;
+      gap: 20px;
+    }
+    
+    .modes button {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      font-size: 1em;
+      padding: 8px 16px;
+      margin: 0 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .modes button:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
+    .modes button.active {
+      background: rgba(255, 255, 255, 0.5);
+    }
+    
+    .time {
+      font-size: 11em;
+      font-weight: 700;
+      text-align: center;
+    }
+    
+    .controls {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .controls button {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      padding: 10px 20px;
+      font-size: 1em;
+      color: white;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .controls button:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Bottom Toolbar */
+    .bottom-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 30px;
+    }
+    .left-icons, .right-icons {
+      display: flex;
+      gap: 20px;
+    }
+    .left-icons .icon-btn, .right-icons .icon-btn {
+      width: 40px;
+      height: 40px;
+      opacity: 0.7;
+      cursor: pointer;
+      transition: 0.3s;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: white;
+      text-decoration: none;
+      border: none;
+    }
+    .left-icons .icon-btn:hover, .right-icons .icon-btn:hover {
+      opacity: 1;
+      transform: scale(1.1);
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Sound Popup Styling */
+    #sound-popup {
+      position: fixed;
+      bottom: 6rem;
+      left: 5vw;
+      max-width: 300px;
+      max-height: 40vh;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      display: none;
+      z-index: 1000;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* Grid layout for sound options */
+    .sound-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    /* Individual sound buttons */
+    .sound-option {
+      padding: 0.75rem 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.9em;
+      text-align: center;
+      border: 1px solid transparent;
+    }
+
+    .sound-option:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .sound-option.active {
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.25);
+      transform: scale(1.02);
+    }
+
+    /* Hide sound popup initially */
+    .sound-popup-hidden {
+      display: none !important;
+    }
+
+    /* Popup title */
+    .popup-title {
+      color: white;
+      font-size: 1.1em;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Top Bar -->
+  <div class="top-bar">
+    <div class="brand">
+      <div class="title">Pomodrive</div>
+      <div class="author">by Ifra</div>
+    </div>
+    <div class="quote">Stay focused and never give up.</div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-container">
+    <!-- Mode Buttons -->
+    <div class="modes">
+      <button id="focusBtn" class="active">Focus</button>
+      <button id="shortBreakBtn">Short Break</button>
+      <button id="longBreakBtn">Long Break</button>
+    </div>
+
+    <!-- Timer Display -->
+    <div class="time" id="time">25:00</div>
+
+    <!-- Timer Controls -->
+    <div class="controls">
+      <button id="startPause">Start</button>
+      <button id="reset">Reset</button> 
+    </div>
+  </div>
+
+  <!-- Bottom Toolbar -->
+  <div class="bottom-toolbar">
+    <div class="left-icons">
+      <button class="icon-btn" id="audio-btn" title="Sounds">🎵</button>
+      <button class="icon-btn" title="Music">🎼</button>
+      <button class="icon-btn" title="Theme">🎨</button>
+    </div>
+
+    <div class="right-icons">
+      <button class="icon-btn" title="Home">🏠</button>
+      <button class="icon-btn" title="Settings">⚙️</button>
+      <button class="icon-btn" title="To-Do">📝</button>
+      <button class="icon-btn" title="Fullscreen">⛶</button>
+    </div>
+  </div>
+
+  <!-- Sound Popup -->
+  <div id="sound-popup" class="sound-popup-hidden">
+    <div class="popup-title">Ambient Sounds</div>
+    <div class="sound-grid">
+      <div class="sound-option" data-sound="birds_chirping">🐦 Birds Chirping</div>
+      <div class="sound-option" data-sound="rain_and_thunder">⛈️ Rain & Thunder</div>
+      <div class="sound-option" data-sound="raindrops">🌧️ Raindrops</div>
+      <div class="sound-option" data-sound="smooth_jazz">🎷 Smooth Jazz</div>
+      <div class="sound-option" data-sound="ocean_waves">🌊 Ocean Waves</div>
+      <div class="sound-option" data-sound="cafe">☕ Cafe Ambience</div>
+      <div class="sound-option" data-sound="footsteps">🍃 Footsteps on Leaves</div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // === Timer logic ===
+      let timer;
+      let isRunning = false;
+      let currentMode = "focus";
+      let timeLeft = 0;
+      let cycleCount = 0;
+
+      const modeDurations = {
+          focus: 25 * 60,
+          short: 5 * 60,
+          long: 15 * 60
+      };
+
+      // Create a simple beep sound using Web Audio API
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      
+      function playBeep() {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = 800;
+        oscillator.type = 'sine';
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+      }
+
+      const timeDisplay = document.getElementById("time");
+      const startPauseBtn = document.getElementById("startPause");
+      const resetBtn = document.getElementById("reset");
+
+      function formatTime(seconds) {
+          const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
+          const secs = String(seconds % 60).padStart(2, "0");
+          return `${mins}:${secs}`;
+      }
+
+      function setTimeForMode(mode) {
+          currentMode = mode;
+          timeLeft = modeDurations[mode];
+          updateTimeDisplay();
+          stopTimer();
+          updateStartPauseButton();
+      }
+
+      function updateTimeDisplay() {
+          timeDisplay.textContent = formatTime(timeLeft);
+      }
+
+      function updateStartPauseButton() {
+          startPauseBtn.textContent = isRunning ? "Pause" : "Start";
+      }
+
+      function startTimer() {
+          if (isRunning) return;
+          
+          // Resume AudioContext if needed
+          if (audioContext.state === 'suspended') {
+              audioContext.resume();
+          }
+          
+          isRunning = true;
+          updateStartPauseButton();
+          timer = setInterval(() => {
+              if (timeLeft > 0) {
+                  timeLeft--;
+                  updateTimeDisplay();
+              } else {
+                  playBeep();
+                  stopTimer();
+                  autoSwitch();
+              }
+          }, 1000);
+      }
+
+      function stopTimer() {
+          clearInterval(timer);
+          isRunning = false;
+          updateStartPauseButton();
+      }
+
+      function resetTimer() {
+          setTimeForMode(currentMode);
+      }
+
+      function autoSwitch() {
+          if (currentMode === "focus") {
+              cycleCount++;
+              setTimeForMode(cycleCount % 4 === 0 ? "long" : "short");
+          } else {
+              setTimeForMode("focus");
+          }
+          startTimer();
+      }
+
+      startPauseBtn.addEventListener("click", () => {
+          if (isRunning) {
+              stopTimer();
+          } else {
+              startTimer();
+          }
+      });
+
+      resetBtn.addEventListener("click", () => {
+          resetTimer();
+      });
+
+      document.querySelectorAll(".modes button").forEach((btn, i) => {
+          btn.addEventListener("click", () => {
+              const modes = ["focus", "short", "long"];
+              setTimeForMode(modes[i]);
+              document.querySelectorAll(".modes button").forEach(b => b.classList.remove("active"));
+              btn.classList.add("active");
+          });
+      });
+
+      // === Audio popup logic ===
+      const audioIcon = document.getElementById("audio-btn");
+      const popup = document.getElementById("sound-popup");
+      const soundOptions = document.querySelectorAll(".sound-option");
+
+      let currentSound = null;
+      let currentAudio = null;
+      let isPopupVisible = false;
+
+      // Sample audio URLs - replace with your actual sound files
+      const soundFiles = {
+          'birds_chirping': 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+          'rain_and_thunder': 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+          'raindrops': 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+          'smooth_jazz': 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+          'ocean_waves': 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+          'cafe': 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav',
+          'footsteps': 'https://www.soundjay.com/misc/sounds/bell-ringing-05.wav'
+      };
+
+      audioIcon.addEventListener("click", (e) => {
+          e.stopPropagation();
+          isPopupVisible = !isPopupVisible;
+          
+          if (isPopupVisible) {
+              popup.style.display = "block";
+              popup.classList.remove("sound-popup-hidden");
+          } else {
+              popup.style.display = "none";
+              popup.classList.add("sound-popup-hidden");
+          }
+      });
+
+      // Close popup when clicking outside
+      document.addEventListener("click", (e) => {
+          if (!popup.contains(e.target) && e.target !== audioIcon && isPopupVisible) {
+              isPopupVisible = false;
+              popup.style.display = "none";
+              popup.classList.add("sound-popup-hidden");
+          }
+      });
+
+      soundOptions.forEach(option => {
+          option.addEventListener("click", (e) => {
+              e.stopPropagation();
+              const soundKey = option.dataset.sound;
+
+              if (currentSound === soundKey) {
+                  // Stop current sound
+                  if (currentAudio) {
+                      currentAudio.pause();
+                      currentAudio.currentTime = 0;
+                  }
+                  currentSound = null;
+                  option.classList.remove("active");
+              } else {
+                  // Stop previous sound and start new one
+                  if (currentAudio) {
+                      currentAudio.pause();
+                      document.querySelector(".sound-option.active")?.classList.remove("active");
+                  }
+                  
+                  // For demo purposes, we'll create a simple oscillator tone
+                  // Replace this with actual audio file loading
+                  createAmbientSound(soundKey);
+                  currentSound = soundKey;
+                  option.classList.add("active");
+              }
+          });
+      });
+
+      // Demo function to create ambient sounds using Web Audio API
+      function createAmbientSound(soundType) {
+          if (currentAudio) {
+              currentAudio.stop();
+          }
+
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          // Different frequencies for different "sounds"
+          const soundMap = {
+              'birds_chirping': 1200,
+              'rain_and_thunder': 200,
+              'raindrops': 800,
+              'smooth_jazz': 440,
+              'ocean_waves': 100,
+              'cafe': 300,
+              'footsteps': 150
+          };
+          
+          oscillator.frequency.value = soundMap[soundType] || 440;
+          oscillator.type = 'sine';
+          
+          gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+          
+          oscillator.start();
+          
+          currentAudio = oscillator;
+      }
+
+      // Initialize
+      setTimeForMode("focus");
+      document.getElementById("focusBtn").classList.add("active");
+    });
+  </script>
+</body>
+</html>
