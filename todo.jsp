@@ -376,7 +376,7 @@
       <div class="title">Pomodrive</div>
       <div class="author">by Ifra</div>
     </div>
-    <div class="page-title">📝 Todo Manager</div>
+    <div class="page-title">Todo Manager</div>
   </div>
 
   <!-- Main Content -->

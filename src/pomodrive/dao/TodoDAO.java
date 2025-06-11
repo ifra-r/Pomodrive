@@ -120,6 +120,45 @@ public class TodoDAO {
         return null;
     }
 
+    public List<Todo> getTodosForUsername(String username, String dbPath) {
+        List<Todo> todos = new ArrayList<>();
+
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath)) {
+            String query = """
+                        SELECT t.id, t.title, t.description, t.createdDate, t.completed, t.completedDate, t.userId
+                        FROM todos t
+                        JOIN users u ON t.userId = u.id
+                        WHERE u.username = ?
+                    """;
+
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setString(1, username);
+                ResultSet rs = stmt.executeQuery();
+
+                while (rs.next()) {
+                    Todo todo = new Todo();
+                    todo.setId(rs.getInt("id"));
+                    todo.setTitle(rs.getString("title"));
+                    todo.setDescription(rs.getString("description"));
+                    todo.setCreatedDate(LocalDateTime.parse(rs.getString("createdDate")));
+                    todo.setCompleted(rs.getBoolean("completed"));
+
+                    String completedDate = rs.getString("completedDate");
+                    if (completedDate != null) {
+                        todo.setCompletedDate(LocalDateTime.parse(completedDate));
+                    }
+
+                    todo.setUserId(rs.getInt("userId"));
+                    todos.add(todo);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return todos;
+    }
+
     public int getTodoCountByUserId(int userId) {
         String sql = "SELECT COUNT(*) FROM todos WHERE user_id = ?";
 

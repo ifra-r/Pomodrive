@@ -12,9 +12,11 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,10 +28,36 @@ public class TodoRestServlet extends HttpServlet {
     @Override
     public void init() throws ServletException {
         super.init();
-        // Initialize Gson with LocalDateTime adapter
         gson = new GsonBuilder()
                 .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
                 .create();
+    }
+
+    private int getUserIdFromSession(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("username") == null) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return -1;
+        }
+
+        String username = (String) session.getAttribute("username");
+
+        try (Connection conn = DriverManager
+                .getConnection("jdbc:sqlite:" + getServletContext().getRealPath("/focusboard.db"));
+                PreparedStatement stmt = conn.prepareStatement("SELECT id FROM users WHERE username = ?")) {
+            stmt.setString(1, username);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("id");
+            } else {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                return -1;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            return -1;
+        }
     }
 
     @Override
@@ -37,15 +65,16 @@ public class TodoRestServlet extends HttpServlet {
             throws ServletException, IOException {
 
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("userId") == null) {
+        if (session == null || session.getAttribute("username") == null) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
-        int userId = (Integer) session.getAttribute("userId");
+        String username = (String) session.getAttribute("username");
 
         try {
-            List<Todo> todos = todoDAO.getTodosByUserId(userId);
+            // Get todos using username from DAO
+            List<Todo> todos = todoDAO.getTodosForUsername(username, getServletContext().getRealPath("/focusboard.db"));
 
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
@@ -54,7 +83,6 @@ public class TodoRestServlet extends HttpServlet {
             out.print(gson.toJson(todos));
             out.flush();
         } catch (Exception e) {
-            System.err.println("Error in doGet: " + e.getMessage());
             e.printStackTrace();
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
@@ -64,16 +92,11 @@ public class TodoRestServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("userId") == null) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        int userId = getUserIdFromSession(request, response);
+        if (userId == -1)
             return;
-        }
-
-        int userId = (Integer) session.getAttribute("userId");
 
         try {
-            // Read JSON from request body
             StringBuilder jsonBuilder = new StringBuilder();
             try (BufferedReader reader = request.getReader()) {
                 String line;
@@ -105,7 +128,6 @@ public class TodoRestServlet extends HttpServlet {
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
         } catch (Exception e) {
-            System.err.println("Error in doPost: " + e.getMessage());
             e.printStackTrace();
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
@@ -115,16 +137,11 @@ public class TodoRestServlet extends HttpServlet {
     protected void doPut(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("userId") == null) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        int userId = getUserIdFromSession(request, response);
+        if (userId == -1)
             return;
-        }
-
-        int userId = (Integer) session.getAttribute("userId");
 
         try {
-            // Extract todo ID from URL
             String pathInfo = request.getPathInfo();
             if (pathInfo == null || pathInfo.length() <= 1) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -139,7 +156,6 @@ public class TodoRestServlet extends HttpServlet {
                 return;
             }
 
-            // Read JSON from request body
             StringBuilder jsonBuilder = new StringBuilder();
             try (BufferedReader reader = request.getReader()) {
                 String line;
@@ -158,7 +174,6 @@ public class TodoRestServlet extends HttpServlet {
             todo.setId(todoId);
             todo.setUserId(userId);
 
-            // If marking as completed, set completed date
             if (todo.isCompleted() && todo.getCompletedDate() == null) {
                 todo.setCompletedDate(LocalDateTime.now());
             }
@@ -175,7 +190,6 @@ public class TodoRestServlet extends HttpServlet {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             }
         } catch (Exception e) {
-            System.err.println("Error in doPut: " + e.getMessage());
             e.printStackTrace();
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
@@ -185,16 +199,11 @@ public class TodoRestServlet extends HttpServlet {
     protected void doDelete(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("userId") == null) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        int userId = getUserIdFromSession(request, response);
+        if (userId == -1)
             return;
-        }
-
-        int userId = (Integer) session.getAttribute("userId");
 
         try {
-            // Extract todo ID from URL
             String pathInfo = request.getPathInfo();
             if (pathInfo == null || pathInfo.length() <= 1) {
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
@@ -217,7 +226,6 @@ public class TodoRestServlet extends HttpServlet {
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             }
         } catch (Exception e) {
-            System.err.println("Error in doDelete: " + e.getMessage());
             e.printStackTrace();
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
