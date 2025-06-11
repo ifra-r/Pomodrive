@@ -422,17 +422,18 @@
 
   <!-- Bottom Navigation -->
   <div class="bottom-nav">
-    <a href="${pageContext.request.contextPath}/focus.jsp" class="nav-btn">← Back to Focus Timer</a>
+    <a href="<%= request.getContextPath() %>/focus.jsp" class="nav-btn">← Back to Focus Timer</a>
   </div>
 
   <script>
     // Get context path for API calls
-    var contextPath = '${pageContext.request.contextPath}';
-    
+    var contextPath = '<%= request.getContextPath() %>';
+    console.log('Context path is:', contextPath);
+
     let todos = [];
     let currentFilter = 'all';
 
-    // Load saved theme from localStorage
+    // Load saved theme
     document.addEventListener('DOMContentLoaded', function() {
         loadSavedTheme();
         loadTodos();
@@ -440,9 +441,9 @@
     });
 
     function loadSavedTheme() {
-        const savedTheme = localStorage.getItem('pomodrive_theme');
+        const savedTheme = sessionStorage.getItem('pomodrive_theme');
         if (savedTheme) {
-            document.body.style.backgroundImage = `url('${contextPath}/images/${savedTheme}')`;
+            document.body.style.backgroundImage = 'url("' + contextPath + '/images/' + savedTheme + '")';
         }
     }
 
@@ -467,12 +468,12 @@
 
     async function loadTodos() {
         try {
-            const response = await fetch(`${contextPath}/api/todos`);
+            const response = await fetch(contextPath + '/api/todos');
             if (response.ok) {
                 todos = await response.json();
                 renderTodos();
             } else if (response.status === 401) {
-                window.location.href = `${contextPath}/login.jsp`;
+                window.location.href = contextPath + '/login.jsp';
             } else {
                 throw new Error('Failed to load todos');
             }
@@ -500,7 +501,7 @@
         };
 
         try {
-            const response = await fetch(`${contextPath}/api/todos`, {
+            const response = await fetch(contextPath + '/api/todos', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -537,7 +538,7 @@
         };
 
         try {
-            const response = await fetch(`${contextPath}/api/todos/${todoId}`, {
+            const response = await fetch(contextPath + '/api/todos/' + todoId, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -564,7 +565,7 @@
         }
 
         try {
-            const response = await fetch(`${contextPath}/api/todos/${todoId}`, {
+            const response = await fetch(contextPath + '/api/todos/' + todoId, {
                 method: 'DELETE'
             });
 
@@ -584,34 +585,33 @@
         const todo = todos.find(t => t.id === todoId);
         if (!todo) return;
 
-        const todoElement = document.querySelector(`[data-todo-id="${todoId}"]`);
+        const todoElement = document.querySelector('[data-todo-id="' + todoId + '"]');
         const actionsDiv = todoElement.querySelector('.todo-actions');
         
         // Create edit form
         const editForm = document.createElement('div');
         editForm.className = 'edit-form';
-        editForm.innerHTML = `
-            <div class="form-group">
-                <label>Title</label>
-                <input type="text" id="edit-title-${todoId}" value="${todo.title}" maxlength="200">
-            </div>
-            <div class="form-group">
-                <label>Description</label>
-                <textarea id="edit-description-${todoId}" maxlength="500" rows="2">${todo.description || ''}</textarea>
-            </div>
-            <div class="form-group">
-                <label>Priority</label>
-                <select id="edit-priority-${todoId}">
-                    <option value="1" ${todo.priority === 1 ? 'selected' : ''}>Low</option>
-                    <option value="2" ${todo.priority === 2 ? 'selected' : ''}>Medium</option>
-                    <option value="3" ${todo.priority === 3 ? 'selected' : ''}>High</option>
-                </select>
-            </div>
-            <div class="todo-actions">
-                <button class="btn btn-small btn-complete" onclick="saveEdit(${todoId})">Save</button>
-                <button class="btn btn-small btn-delete" onclick="cancelEdit(${todoId})">Cancel</button>
-            </div>
-        `;
+        editForm.innerHTML = 
+            '<div class="form-group">' +
+                '<label>Title</label>' +
+                '<input type="text" id="edit-title-' + todoId + '" value="' + todo.title.replace(/"/g, '&quot;') + '" maxlength="200">' +
+            '</div>' +
+            '<div class="form-group">' +
+                '<label>Description</label>' +
+                '<textarea id="edit-description-' + todoId + '" maxlength="500" rows="2">' + (todo.description || '') + '</textarea>' +
+            '</div>' +
+            '<div class="form-group">' +
+                '<label>Priority</label>' +
+                '<select id="edit-priority-' + todoId + '">' +
+                    '<option value="1"' + (todo.priority == 1 ? ' selected' : '') + '>Low</option>' +
+                    '<option value="2"' + (todo.priority == 2 ? ' selected' : '') + '>Medium</option>' +
+                    '<option value="3"' + (todo.priority == 3 ? ' selected' : '') + '>High</option>' +
+                '</select>' +
+            '</div>' +
+            '<div class="todo-actions">' +
+                '<button class="btn btn-small btn-complete" onclick="saveEdit(' + todoId + ')">Save</button>' +
+                '<button class="btn btn-small btn-delete" onclick="cancelEdit(' + todoId + ')">Cancel</button>' +
+            '</div>';
 
         // Replace actions with edit form
         actionsDiv.style.display = 'none';
@@ -619,9 +619,9 @@
     }
 
     async function saveEdit(todoId) {
-        const title = document.getElementById(`edit-title-${todoId}`).value.trim();
-        const description = document.getElementById(`edit-description-${todoId}`).value.trim();
-        const priority = parseInt(document.getElementById(`edit-priority-${todoId}`).value);
+        const title = document.getElementById('edit-title-' + todoId).value.trim();
+        const description = document.getElementById('edit-description-' + todoId).value.trim();
+        const priority = parseInt(document.getElementById('edit-priority-' + todoId).value);
 
         if (!title) {
             alert('Please enter a task title');
@@ -637,7 +637,7 @@
         };
 
         try {
-            const response = await fetch(`${contextPath}/api/todos/${todoId}`, {
+            const response = await fetch(contextPath + '/api/todos/' + todoId, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json'
@@ -682,14 +682,13 @@
         if (filteredTodos.length === 0) {
             const emptyMessage = currentFilter === 'all' ? 
                 'No tasks yet. Add your first task above!' :
-                `No ${currentFilter} tasks found.`;
+                'No ' + currentFilter + ' tasks found.';
             
-            todoList.innerHTML = `
-                <div class="empty-state">
-                    <h3>📝 ${emptyMessage}</h3>
-                    <p>Stay organized and productive!</p>
-                </div>
-            `;
+            todoList.innerHTML = 
+                '<div class="empty-state">' +
+                    '<h3>📝 ' + emptyMessage + '</h3>' +
+                    '<p>Stay organized and productive!</p>' +
+                '</div>';
             return;
         }
 
@@ -701,34 +700,38 @@
             const completedDate = todo.completedDate ? 
                 new Date(todo.completedDate).toLocaleDateString() : null;
 
-            return `
-                <div class="todo-item ${todo.completed ? 'completed' : ''}" data-todo-id="${todo.id}">
-                    <div class="todo-header">
-                        <h3 class="todo-title ${todo.completed ? 'completed' : ''}">${todo.title}</h3>
-                        <span class="todo-priority ${priorityClass}">${priorityText}</span>
-                    </div>
+            return '<div class="todo-item ' + (todo.completed ? 'completed' : '') + '" data-todo-id="' + todo.id + '">' +
+                    '<div class="todo-header">' +
+                        '<h3 class="todo-title ' + (todo.completed ? 'completed' : '') + '">' + escapeHtml(todo.title) + '</h3>' +
+                        '<span class="todo-priority ' + priorityClass + '">' + priorityText + '</span>' +
+                    '</div>' +
                     
-                    ${todo.description ? `<div class="todo-description">${todo.description}</div>` : ''}
+                    (todo.description ? '<div class="todo-description">' + escapeHtml(todo.description) + '</div>' : '') +
                     
-                    <div class="todo-meta">
-                        Created: ${createdDate}
-                        ${completedDate ? ` • Completed: ${completedDate}` : ''}
-                    </div>
+                    '<div class="todo-meta">' +
+                        'Created: ' + createdDate +
+                        (completedDate ? ' • Completed: ' + completedDate : '') +
+                    '</div>' +
                     
-                    <div class="todo-actions">
-                        <button class="btn btn-small btn-complete" onclick="toggleTodoComplete(${todo.id})">
-                            ${todo.completed ? '↩️ Reopen' : '✅ Complete'}
-                        </button>
-                        <button class="btn btn-small btn-edit" onclick="editTodo(${todo.id})">
-                            ✏️ Edit
-                        </button>
-                        <button class="btn btn-small btn-delete" onclick="deleteTodo(${todo.id})">
-                            🗑️ Delete
-                        </button>
-                    </div>
-                </div>
-            `;
+                    '<div class="todo-actions">' +
+                        '<button class="btn btn-small btn-complete" onclick="toggleTodoComplete(' + todo.id + ')">' +
+                            (todo.completed ? '↩️ Reopen' : '✅ Complete') +
+                        '</button>' +
+                        '<button class="btn btn-small btn-edit" onclick="editTodo(' + todo.id + ')">' +
+                            '✏️ Edit' +
+                        '</button>' +
+                        '<button class="btn btn-small btn-delete" onclick="deleteTodo(' + todo.id + ')">' +
+                            '🗑️ Delete' +
+                        '</button>' +
+                    '</div>' +
+                '</div>';
         }).join('');
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     function formatDateTime(dateTimeString) {
