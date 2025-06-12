@@ -325,239 +325,259 @@
   </div>
 
   <script type="text/javascript">
-    // Get context path for dynamic resource loading
-    var contextPath = '${pageContext.request.contextPath}';
-    
-    document.addEventListener("DOMContentLoaded", function () {
-        // === Timer logic ===
-        let timer;
-        let isRunning = false;
-        let currentMode = "focus";
-        let timeLeft = 0;
-        let cycleCount = 0;
+        // Get context path for dynamic resource loading
+        var contextPath = '${pageContext.request.contextPath}';
+        
+        document.addEventListener("DOMContentLoaded", function () {
+            // === Timer logic ===
+            let timer;
+            let isRunning = false;
+            let currentMode = "focus";
+            let timeLeft = 0;
+            let cycleCount = 0;
 
-        const modeDurations = {
-            focus: 25 * 60,
-            short: 5 * 60,
-            long: 15 * 60
-        };
+            const modeDurations = {
+                focus: 25 * 60,
+                short: 5 * 60,
+                long: 15 * 60
+            };
 
-        // Use context path for sound file
-        const sound = new Audio(contextPath + "/sounds/bell.mp3");
+            // Use context path for sound file
+            const sound = new Audio(contextPath + "/sounds/bell.mp3");
 
-        const timeDisplay = document.getElementById("time");
-        const startPauseBtn = document.getElementById("startPause");
-        const resetBtn = document.getElementById("reset");
+            const timeDisplay = document.getElementById("time");
+            const startPauseBtn = document.getElementById("startPause");
+            const resetBtn = document.getElementById("reset");
 
-        function formatTime(seconds) {
-            const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
-            const secs = String(seconds % 60).padStart(2, "0");
-            return mins + ":" + secs;
-        }
-
-        function setTimeForMode(mode) {
-            currentMode = mode;
-            timeLeft = modeDurations[mode];
-            updateTimeDisplay();
-            stopTimer();
-            updateStartPauseButton();
-        }
-
-        function updateTimeDisplay() {
-            timeDisplay.textContent = formatTime(timeLeft);
-        }
-
-        function updateStartPauseButton() {
-            startPauseBtn.textContent = isRunning ? "Pause" : "Start";
-        }
-
-        function startTimer() {
-            if (isRunning) return;
-            isRunning = true;
-            updateStartPauseButton();
-            timer = setInterval(function() {
-                if (timeLeft > 0) {
-                    timeLeft--;
-                    updateTimeDisplay();
-                } else {
-                    try {
-                        sound.play().catch(function(error) {
-                            console.log("Sound play failed:", error);
-                        });
-                    } catch (e) {
-                        console.log("Sound error:", e);
-                    }
-                    stopTimer();
-                    autoSwitch();
-                }
-            }, 1000);
-        }
-
-        function stopTimer() {
-            if (timer) {
-                clearInterval(timer);
+            function formatTime(seconds) {
+                const mins = String(Math.floor(seconds / 60)).padStart(2, "0");
+                const secs = String(seconds % 60).padStart(2, "0");
+                return mins + ":" + secs;
             }
-            isRunning = false;
-            updateStartPauseButton();
-        }
 
-        function resetTimer() {
-            setTimeForMode(currentMode);
-        }
-
-        function autoSwitch() {
-            if (currentMode === "focus") {
-                cycleCount++;
-                setTimeForMode(cycleCount % 4 === 0 ? "long" : "short");
-            } else {
-                setTimeForMode("focus");
-            }
-            startTimer();
-        }
-
-        startPauseBtn.addEventListener("click", function() {
-            if (isRunning) {
+            function setTimeForMode(mode) {
+                currentMode = mode;
+                timeLeft = modeDurations[mode];
+                updateTimeDisplay();
                 stopTimer();
-            } else {
+                updateStartPauseButton();
+            }
+
+            function updateTimeDisplay() {
+                timeDisplay.textContent = formatTime(timeLeft);
+            }
+
+            function updateStartPauseButton() {
+                startPauseBtn.textContent = isRunning ? "Pause" : "Start";
+            }
+
+            function startTimer() {
+                if (isRunning) return;
+                isRunning = true;
+                updateStartPauseButton();
+                timer = setInterval(function() {
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        updateTimeDisplay();
+                    } else {
+                        try {
+                            sound.play().catch(function(error) {
+                                console.log("Sound play failed:", error);
+                            });
+                        } catch (e) {
+                            console.log("Sound error:", e);
+                        }
+                        stopTimer();
+                        autoSwitch();
+                    }
+                }, 1000);
+            }
+
+            function stopTimer() {
+                if (timer) {
+                    clearInterval(timer);
+                }
+                isRunning = false;
+                updateStartPauseButton();
+            }
+
+            function resetTimer() {
+                setTimeForMode(currentMode);
+            }
+
+            function autoSwitch() {
+                if (currentMode === "focus") {
+                    cycleCount++;
+                    setTimeForMode(cycleCount % 4 === 0 ? "long" : "short");
+                } else {
+                    setTimeForMode("focus");
+                }
                 startTimer();
             }
-        });
 
-        resetBtn.addEventListener("click", function() {
-            resetTimer();
-        });
-
-        var modeButtons = document.querySelectorAll(".modes button");
-        for (var i = 0; i < modeButtons.length; i++) {
-            (function(index) {
-                modeButtons[index].addEventListener("click", function() {
-                    var modes = ["focus", "short", "long"];
-                    setTimeForMode(modes[index]);
-                    for (var j = 0; j < modeButtons.length; j++) {
-                        modeButtons[j].classList.remove("active");
-                    }
-                    this.classList.add("active");
-                });
-            })(i);
-        }
-
-        // === Audio popup logic ===
-        const audioIcon = document.getElementById("audio-btn");
-        const soundPopup = document.getElementById("sound-popup");
-        const soundOptions = document.querySelectorAll(".sound-option");
-
-        let currentSound = null;
-        let currentAudio = null;
-        let isSoundPopupVisible = false;
-
-        audioIcon.addEventListener("click", function(e) {
-            e.stopPropagation();
-            // Close theme popup if open
-            if (isThemePopupVisible) {
-                isThemePopupVisible = false;
-                themePopup.style.display = "none";
-            }
-            isSoundPopupVisible = !isSoundPopupVisible;
-            soundPopup.style.display = isSoundPopupVisible ? "block" : "none";
-        });
-
-        for (var k = 0; k < soundOptions.length; k++) {
-            soundOptions[k].addEventListener("click", function(e) {
-                e.stopPropagation();
-                var soundFile = this.dataset.sound;
-
-                if (currentSound === soundFile) {
-                    // Stop current sound
-                    if (currentAudio) {
-                        currentAudio.pause();
-                        currentAudio.currentTime = 0;
-                    }
-                    currentSound = null;
-                    this.classList.remove("active");
+            startPauseBtn.addEventListener("click", function() {
+                if (isRunning) {
+                    stopTimer();
                 } else {
-                    // Stop previous sound and start new one
-                    if (currentAudio) {
-                        currentAudio.pause();
-                        var activeOption = document.querySelector(".sound-option.active");
-                        if (activeOption) {
-                            activeOption.classList.remove("active");
-                        }
-                    }
-                    
-                    try {
-                        currentAudio = new Audio(contextPath + "/sounds/" + soundFile);
-                        currentAudio.loop = true;
-                        currentAudio.play().catch(function(error) {
-                            console.log("Audio play failed:", error);
-                        });
-                        currentSound = soundFile;
-                        this.classList.add("active");
-                    } catch (error) {
-                        console.log("Audio creation failed:", error);
-                    }
+                    startTimer();
                 }
             });
-        }
 
-        // === Theme popup logic ===
-        const themeIcon = document.getElementById("theme-btn");
-        const themePopup = document.getElementById("theme-popup");
-        const themeOptions = document.querySelectorAll(".theme-option");
+            resetBtn.addEventListener("click", function() {
+                resetTimer();
+            });
 
-        let currentTheme = "pink_orange_heart.jpg";
-        let isThemePopupVisible = false;
-
-        themeIcon.addEventListener("click", function(e) {
-            e.stopPropagation();
-            // Close sound popup if open
-            if (isSoundPopupVisible) {
-                isSoundPopupVisible = false;
-                soundPopup.style.display = "none";
+            var modeButtons = document.querySelectorAll(".modes button");
+            for (var i = 0; i < modeButtons.length; i++) {
+                (function(index) {
+                    modeButtons[index].addEventListener("click", function() {
+                        var modes = ["focus", "short", "long"];
+                        setTimeForMode(modes[index]);
+                        for (var j = 0; j < modeButtons.length; j++) {
+                            modeButtons[j].classList.remove("active");
+                        }
+                        this.classList.add("active");
+                    });
+                })(i);
             }
-            isThemePopupVisible = !isThemePopupVisible;
-            themePopup.style.display = isThemePopupVisible ? "block" : "none";
-        });
 
-        for (var m = 0; m < themeOptions.length; m++) {
-            themeOptions[m].addEventListener("click", function(e) {
+            // === Audio popup logic ===
+            const audioIcon = document.getElementById("audio-btn");
+            const soundPopup = document.getElementById("sound-popup");
+            const soundOptions = document.querySelectorAll(".sound-option");
+
+            let currentSound = null;
+            let currentAudio = null;
+            let isSoundPopupVisible = false;
+
+            audioIcon.addEventListener("click", function(e) {
                 e.stopPropagation();
-                var themeFile = this.dataset.theme;
+                // Close theme popup if open
+                if (isThemePopupVisible) {
+                    isThemePopupVisible = false;
+                    themePopup.style.display = "none";
+                }
+                isSoundPopupVisible = !isSoundPopupVisible;
+                soundPopup.style.display = isSoundPopupVisible ? "block" : "none";
+            });
 
-                // Remove active class from all theme options
+            for (var k = 0; k < soundOptions.length; k++) {
+                soundOptions[k].addEventListener("click", function(e) {
+                    e.stopPropagation();
+                    var soundFile = this.dataset.sound;
+
+                    if (currentSound === soundFile) {
+                        // Stop current sound
+                        if (currentAudio) {
+                            currentAudio.pause();
+                            currentAudio.currentTime = 0;
+                        }
+                        currentSound = null;
+                        this.classList.remove("active");
+                    } else {
+                        // Stop previous sound and start new one
+                        if (currentAudio) {
+                            currentAudio.pause();
+                            var activeOption = document.querySelector(".sound-option.active");
+                            if (activeOption) {
+                                activeOption.classList.remove("active");
+                            }
+                        }
+                        
+                        try {
+                            currentAudio = new Audio(contextPath + "/sounds/" + soundFile);
+                            currentAudio.loop = true;
+                            currentAudio.play().catch(function(error) {
+                                console.log("Audio play failed:", error);
+                            });
+                            currentSound = soundFile;
+                            this.classList.add("active");
+                        } catch (error) {
+                            console.log("Audio creation failed:", error);
+                        }
+                    }
+                });
+            }
+
+            // === Theme popup logic ===
+            const themeIcon = document.getElementById("theme-btn");
+            const themePopup = document.getElementById("theme-popup");
+            const themeOptions = document.querySelectorAll(".theme-option");
+
+            let currentTheme = "pink_orange_heart.jpg";
+            let isThemePopupVisible = false;
+
+            themeIcon.addEventListener("click", function(e) {
+                e.stopPropagation();
+                // Close sound popup if open
+                if (isSoundPopupVisible) {
+                    isSoundPopupVisible = false;
+                    soundPopup.style.display = "none";
+                }
+                isThemePopupVisible = !isThemePopupVisible;
+                themePopup.style.display = isThemePopupVisible ? "block" : "none";
+            });
+
+            for (var m = 0; m < themeOptions.length; m++) {
+                themeOptions[m].addEventListener("click", function(e) {
+                    e.stopPropagation();
+                    var themeFile = this.dataset.theme;
+
+                    // Save theme selection to localStorage
+                    localStorage.setItem('selectedTheme', themeFile);
+
+                    // Remove active class from all theme options
+                    var activeThemeOption = document.querySelector(".theme-option.active");
+                    if (activeThemeOption) {
+                        activeThemeOption.classList.remove("active");
+                    }
+
+                    // Add active class to clicked option
+                    this.classList.add("active");
+
+                    // Change background image
+                    document.body.style.backgroundImage = "url('" + contextPath + "/images/" + themeFile + "')";
+                    currentTheme = themeFile;
+
+                    // Close theme popup after selection
+                    isThemePopupVisible = false;
+                    themePopup.style.display = "none";
+                });
+            }
+
+            // Close popups when clicking outside
+            document.addEventListener("click", function(e) {
+                if (!soundPopup.contains(e.target) && e.target !== audioIcon && isSoundPopupVisible) {
+                    isSoundPopupVisible = false;
+                    soundPopup.style.display = "none";
+                }
+                if (!themePopup.contains(e.target) && e.target !== themeIcon && isThemePopupVisible) {
+                    isThemePopupVisible = false;
+                    themePopup.style.display = "none";
+                }
+            });
+
+            // Load saved theme on page load
+            var savedTheme = localStorage.getItem('selectedTheme');
+            if (savedTheme) {
+                document.body.style.backgroundImage = "url('" + contextPath + "/images/" + savedTheme + "')";
+                // Update active theme option
                 var activeThemeOption = document.querySelector(".theme-option.active");
                 if (activeThemeOption) {
                     activeThemeOption.classList.remove("active");
                 }
-
-                // Add active class to clicked option
-                this.classList.add("active");
-
-                // Change background image
-                document.body.style.backgroundImage = "url('" + contextPath + "/images/" + themeFile + "')";
-                currentTheme = themeFile;
-
-                // Close theme popup after selection
-                isThemePopupVisible = false;
-                themePopup.style.display = "none";
-            });
-        }
-
-        // Close popups when clicking outside
-        document.addEventListener("click", function(e) {
-            if (!soundPopup.contains(e.target) && e.target !== audioIcon && isSoundPopupVisible) {
-                isSoundPopupVisible = false;
-                soundPopup.style.display = "none";
+                var newActiveOption = document.querySelector(".theme-option[data-theme='" + savedTheme + "']");
+                if (newActiveOption) {
+                    newActiveOption.classList.add("active");
+                }
+                currentTheme = savedTheme;
             }
-            if (!themePopup.contains(e.target) && e.target !== themeIcon && isThemePopupVisible) {
-                isThemePopupVisible = false;
-                themePopup.style.display = "none";
-            }
+
+            // Initialize
+            setTimeForMode("focus");
+            document.getElementById("focusBtn").classList.add("active");
         });
+    </script>
 
-        // Initialize
-        setTimeForMode("focus");
-        document.getElementById("focusBtn").classList.add("active");
-    });
-  </script>
 </body>
 </html>

@@ -259,6 +259,21 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
+
+      var savedTheme = localStorage.getItem('selectedTheme');
+      if (savedTheme) {
+          document.body.style.backgroundImage = "url('images/" + savedTheme + "')";
+          // Update active theme option
+          var activeThemeOption = document.querySelector(".theme-option.active");
+          if (activeThemeOption) {
+              activeThemeOption.classList.remove("active");
+          }
+          var newActiveOption = document.querySelector(".theme-option[data-theme='" + savedTheme + "']");
+          if (newActiveOption) {
+              newActiveOption.classList.add("active");
+          }
+      }
+
         // Live Time Display
         function updateTime() {
           const now = new Date();
@@ -362,6 +377,9 @@
                 // Change background image
                 document.body.style.backgroundImage = "url('images/" + themeFile + "')";
                 currentTheme = themeFile;
+                
+                // Save theme selection - MOVED HERE
+                localStorage.setItem('selectedTheme', themeFile);
 
                 // Close theme popup after selection
                 isThemePopupVisible = false;
@@ -381,6 +399,6 @@
             }
         });
     });
-  </script>
+</script>
 </body>
 </html>
