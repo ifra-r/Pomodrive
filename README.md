@@ -6,25 +6,25 @@
 
 ## Features
 
-### ✅ Pomodoro Timer
+###  Pomodoro Timer
 - Focus, short break, and long break cycles
 - Tracks completed Pomodoro sessions per user
 - Visual timer with controls (reset etc)
 
-### ✅ Focus Dashboard
+### Focus Dashboard
 - Personalized homepage showing:
   - Time and greeting
   - Quote 
   - Theme and sound toggle options
 - Allows the user to customize themes and ambient sounds
 
-### ✅ To-Do List
+### To-Do List
 - Persistent task management tied to logged-in user
 - Add, complete, delete, edit and prioritize tasks
 - Tasks stored in SQLite, fetched via REST-style endpoints (`/api/todos`)
 - Tracks metadata like creation/completion time, priority, and status
 
-### ✅ Theming & Background Sounds
+### Theming & Background Sounds
 - Multiple UI themes: Default, Dark, Ocean, Sunset
 - Sound options: Ambient, Rain, Forest, or None
 - Preferences saved per user session (via `localStorage`)
