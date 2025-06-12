@@ -5,12 +5,10 @@ import pomodrive.db.DatabaseUtil;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class TodoDAO {
-    // Use ISO format for consistent date storage
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public List<Todo> getTodosByUserId(int userId) {
@@ -36,6 +34,10 @@ public class TodoDAO {
     public Todo createTodo(Todo todo) {
         String sql = "INSERT INTO todos (user_id, title, description, priority, created_date, completed) VALUES (?, ?, ?, ?, ?, ?)";
 
+        System.out.println("Creating todo with SQL: " + sql);
+        System.out.println("Todo details: userId=" + todo.getUserId() + ", title=" + todo.getTitle() +
+                ", priority=" + todo.getPriority() + ", completed=" + todo.isCompleted());
+
         try (Connection conn = DatabaseUtil.getConnection();
                 PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
@@ -43,18 +45,35 @@ public class TodoDAO {
             pstmt.setString(2, todo.getTitle());
             pstmt.setString(3, todo.getDescription());
             pstmt.setInt(4, todo.getPriority());
-            pstmt.setString(5, formatDateTime(todo.getCreatedDate()));
-            pstmt.setInt(6, todo.isCompleted() ? 1 : 0);
 
+            // For SQLite, store as TEXT in ISO format
+            if (todo.getCreatedDate() != null) {
+                pstmt.setString(5, todo.getCreatedDate().format(DATE_FORMATTER));
+            } else {
+                pstmt.setString(5, LocalDateTime.now().format(DATE_FORMATTER));
+            }
+
+            pstmt.setInt(6, todo.isCompleted() ? 1 : 0); // SQLite uses INTEGER for boolean
+
+            System.out.println("Executing SQL with parameters set");
             int affectedRows = pstmt.executeUpdate();
+            System.out.println("Affected rows: " + affectedRows);
+
             if (affectedRows > 0) {
                 ResultSet generatedKeys = pstmt.getGeneratedKeys();
                 if (generatedKeys.next()) {
                     todo.setId(generatedKeys.getInt(1));
+                    System.out.println("Generated ID: " + todo.getId());
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Error creating todo: " + e.getMessage());
+            System.err.println("SQL Error creating todo: " + e.getMessage());
+            System.err.println("SQL State: " + e.getSQLState());
+            System.err.println("Error Code: " + e.getErrorCode());
+            e.printStackTrace();
+            return null;
+        } catch (Exception e) {
+            System.err.println("General error creating todo: " + e.getMessage());
             e.printStackTrace();
             return null;
         }
@@ -69,9 +88,16 @@ public class TodoDAO {
 
             pstmt.setString(1, todo.getTitle());
             pstmt.setString(2, todo.getDescription());
-            pstmt.setInt(3, todo.isCompleted() ? 1 : 0);
+            pstmt.setInt(3, todo.isCompleted() ? 1 : 0); // SQLite uses INTEGER for boolean
             pstmt.setInt(4, todo.getPriority());
-            pstmt.setString(5, todo.getCompletedDate() != null ? formatDateTime(todo.getCompletedDate()) : null);
+
+            // For SQLite, store as TEXT in ISO format
+            if (todo.getCompletedDate() != null) {
+                pstmt.setString(5, todo.getCompletedDate().format(DATE_FORMATTER));
+            } else {
+                pstmt.setString(5, null);
+            }
+
             pstmt.setInt(6, todo.getId());
             pstmt.setInt(7, todo.getUserId());
 
@@ -120,45 +146,6 @@ public class TodoDAO {
         return null;
     }
 
-    public List<Todo> getTodosForUsername(String username, String dbPath) {
-        List<Todo> todos = new ArrayList<>();
-
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath)) {
-            String query = """
-                        SELECT t.id, t.title, t.description, t.createdDate, t.completed, t.completedDate, t.userId
-                        FROM todos t
-                        JOIN users u ON t.userId = u.id
-                        WHERE u.username = ?
-                    """;
-
-            try (PreparedStatement stmt = conn.prepareStatement(query)) {
-                stmt.setString(1, username);
-                ResultSet rs = stmt.executeQuery();
-
-                while (rs.next()) {
-                    Todo todo = new Todo();
-                    todo.setId(rs.getInt("id"));
-                    todo.setTitle(rs.getString("title"));
-                    todo.setDescription(rs.getString("description"));
-                    todo.setCreatedDate(LocalDateTime.parse(rs.getString("createdDate")));
-                    todo.setCompleted(rs.getBoolean("completed"));
-
-                    String completedDate = rs.getString("completedDate");
-                    if (completedDate != null) {
-                        todo.setCompletedDate(LocalDateTime.parse(completedDate));
-                    }
-
-                    todo.setUserId(rs.getInt("userId"));
-                    todos.add(todo);
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
-        return todos;
-    }
-
     public int getTodoCountByUserId(int userId) {
         String sql = "SELECT COUNT(*) FROM todos WHERE user_id = ?";
 
@@ -203,57 +190,29 @@ public class TodoDAO {
         todo.setUserId(rs.getInt("user_id"));
         todo.setTitle(rs.getString("title"));
         todo.setDescription(rs.getString("description"));
-        todo.setCompleted(rs.getInt("completed") == 1);
+        todo.setCompleted(rs.getInt("completed") == 1); // Convert INTEGER to boolean
         todo.setPriority(rs.getInt("priority"));
 
+        // Handle SQLite TEXT datetime columns
         String createdDateStr = rs.getString("created_date");
-        if (createdDateStr != null && !createdDateStr.isEmpty()) {
+        if (createdDateStr != null && !createdDateStr.trim().isEmpty()) {
             try {
-                todo.setCreatedDate(parseDateTime(createdDateStr));
+                todo.setCreatedDate(LocalDateTime.parse(createdDateStr, DATE_FORMATTER));
             } catch (Exception e) {
-                System.err.println("Error parsing created date: " + createdDateStr);
+                System.err.println("Error parsing created_date: " + createdDateStr);
                 todo.setCreatedDate(LocalDateTime.now());
             }
         }
 
         String completedDateStr = rs.getString("completed_date");
-        if (completedDateStr != null && !completedDateStr.isEmpty()) {
+        if (completedDateStr != null && !completedDateStr.trim().isEmpty()) {
             try {
-                todo.setCompletedDate(parseDateTime(completedDateStr));
+                todo.setCompletedDate(LocalDateTime.parse(completedDateStr, DATE_FORMATTER));
             } catch (Exception e) {
-                System.err.println("Error parsing completed date: " + completedDateStr);
+                System.err.println("Error parsing completed_date: " + completedDateStr);
             }
         }
 
         return todo;
-    }
-
-    private String formatDateTime(LocalDateTime dateTime) {
-        if (dateTime == null)
-            return null;
-        return dateTime.format(DATE_FORMATTER);
-    }
-
-    private LocalDateTime parseDateTime(String dateTimeStr) {
-        if (dateTimeStr == null || dateTimeStr.trim().isEmpty())
-            return null;
-
-        try {
-            // Try ISO format first (what we store)
-            return LocalDateTime.parse(dateTimeStr, DATE_FORMATTER);
-        } catch (DateTimeParseException e1) {
-            try {
-                // Try ISO format without time
-                return LocalDateTime.parse(dateTimeStr + " 00:00:00", DATE_FORMATTER);
-            } catch (DateTimeParseException e2) {
-                try {
-                    // Try standard ISO format
-                    return LocalDateTime.parse(dateTimeStr);
-                } catch (DateTimeParseException e3) {
-                    System.err.println("Unable to parse date: " + dateTimeStr);
-                    throw e3;
-                }
-            }
-        }
     }
 }

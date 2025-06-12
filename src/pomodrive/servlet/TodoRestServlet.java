@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import pomodrive.dao.TodoDAO;
 import pomodrive.model.Todo;
+import pomodrive.db.DatabaseUtil;
 import pomodrive.util.LocalDateTimeAdapter;
 
 import jakarta.servlet.ServletException;
@@ -31,6 +32,19 @@ public class TodoRestServlet extends HttpServlet {
         gson = new GsonBuilder()
                 .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
                 .create();
+
+        try {
+            // Match the path used throughout the app
+            String relativePath = "/focusboard.db";
+            String absolutePath = getServletContext().getRealPath(relativePath);
+
+            System.out.println("Resolved DB path in servlet: " + absolutePath); // Debug log
+
+            DatabaseUtil.setDbPath(absolutePath);
+            DatabaseUtil.initializeSchema();
+        } catch (Exception e) {
+            throw new ServletException("************* Failed to initialize schema", e);
+        }
     }
 
     private int getUserIdFromSession(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -42,8 +56,8 @@ public class TodoRestServlet extends HttpServlet {
 
         String username = (String) session.getAttribute("username");
 
-        try (Connection conn = DriverManager
-                .getConnection("jdbc:sqlite:" + getServletContext().getRealPath("/focusboard.db"));
+        // Use DatabaseUtil instead of direct SQLite connection
+        try (Connection conn = DatabaseUtil.getConnection();
                 PreparedStatement stmt = conn.prepareStatement("SELECT id FROM users WHERE username = ?")) {
             stmt.setString(1, username);
             ResultSet rs = stmt.executeQuery();
@@ -54,6 +68,8 @@ public class TodoRestServlet extends HttpServlet {
                 return -1;
             }
         } catch (SQLException e) {
+            System.err
+                    .println("************* Error getting user ID for username: " + username + " - " + e.getMessage());
             e.printStackTrace();
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             return -1;
@@ -64,17 +80,12 @@ public class TodoRestServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("username") == null) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        int userId = getUserIdFromSession(request, response);
+        if (userId == -1)
             return;
-        }
-
-        String username = (String) session.getAttribute("username");
 
         try {
-            // Get todos using username from DAO
-            List<Todo> todos = todoDAO.getTodosForUsername(username, getServletContext().getRealPath("/focusboard.db"));
+            List<Todo> todos = todoDAO.getTodosByUserId(userId);
 
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
@@ -106,30 +117,53 @@ public class TodoRestServlet extends HttpServlet {
             }
 
             String jsonString = jsonBuilder.toString();
+            System.out.println("Received JSON: " + jsonString); // Debug log
+
             if (jsonString.trim().isEmpty()) {
+                System.out.println("************* Empty JSON received");
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 return;
             }
 
             Todo todo = gson.fromJson(jsonString, Todo.class);
+            System.out.println("Parsed Todo: " + todo.getTitle()); // Debug log
+
             todo.setUserId(userId);
             todo.setCreatedDate(LocalDateTime.now());
 
+            // Set default values if not provided
+            if (todo.getPriority() == 0) {
+                todo.setPriority(1); // Default priority
+            }
+            if (todo.getDescription() == null) {
+                todo.setDescription(""); // Default empty description
+            }
+
+            System.out.println("Creating todo for user: " + userId); // Debug log
             Todo createdTodo = todoDAO.createTodo(todo);
 
             response.setContentType("application/json");
             response.setCharacterEncoding("UTF-8");
 
             if (createdTodo != null) {
+                System.out.println("Todo created successfully with ID: " + createdTodo.getId());
                 PrintWriter out = response.getWriter();
                 out.print(gson.toJson(createdTodo));
                 out.flush();
             } else {
+                System.out.println("************* Failed to create todo - DAO returned null");
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
         } catch (Exception e) {
+            System.err.println("************* Error in doPost: " + e.getMessage());
             e.printStackTrace();
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+
+            // Send error details in response for debugging
+            response.setContentType("application/json");
+            PrintWriter out = response.getWriter();
+            out.print("{\"error\":\"" + e.getMessage() + "\"}");
+            out.flush();
         }
     }
 
