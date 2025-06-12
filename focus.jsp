@@ -154,11 +154,10 @@
         transform: scale(1.1);
     }
 
-    /* Sound Popup Styling */
     #sound-popup {
         position: fixed;
         bottom: 6rem;
-        left: 5vw;
+        left: 30px; /* Align with the left edge of bottom-left icons */
         max-width: 300px;
         max-height: 40vh;
         background: rgba(255, 255, 255, 0.15);
@@ -172,12 +171,11 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    /* Theme Popup Styling */
+    /* Theme Popup Styling - positioned above theme icon */
     #theme-popup {
         position: fixed;
         bottom: 6rem;
-        left: 10vw;
-        transform: translateX(-50%);
+        left: 90px; /* Position above theme icon (30px + 40px icon + 20px gap) */
         max-width: 350px;
         max-height: 45vh;
         background: rgba(255, 255, 255, 0.15);
