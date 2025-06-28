@@ -19,7 +19,7 @@ it will be changed accross all pages
 ![alt text](image-3.png)
 
 - add bg sound
-![alt text](image-4.png)
+![alt text](image-7.png)
 
 - pomodro sessions on focus page
 ![alt text](image-5.png)
