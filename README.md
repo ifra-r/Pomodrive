@@ -4,6 +4,30 @@
 
 ---
 
+## preview
+- signup page
+![alt text](image.png)
+
+- login page
+![alt text](image-1.png)
+
+- home page
+![alt text](image-2.png)
+
+- change themes 
+it will be changed accross all pages
+![alt text](image-3.png)
+
+- add bg sound
+![alt text](image-4.png)
+
+- pomodro sessions on focus page
+![alt text](image-5.png)
+
+- todo list
+![alt text](image-6.png)
+
+
 ## Features
 
 ###  Pomodoro Timer
@@ -85,9 +109,3 @@ Make sure the `focusboard.db` file exists in the correct path (`webapps/Pomodriv
 - The backend uses simple `HttpServlet`s and `@WebServlet("/api/...")` routing.
 
 ---
-
-## Future Improvements
- 
-- Analytics dashboard for Pomodoro productivity trends 
-
---- 
